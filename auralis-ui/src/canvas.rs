@@ -216,6 +216,25 @@ pub fn build(state: SharedState, cmd_tx: Sender<UiCommand>, on_drop: impl Fn() +
             // Floating Orb: Circle radius ~32
             // Cluster: Rect 300x150
             
+            // IMPORTANT: Don't start drag if clicking Separate button
+            if matches!(orb.kind, OrbKind::Cluster { .. }) {
+                let ox = orb.position.0;
+                let oy = orb.position.1;
+                let w = 300.0;
+                let h = 150.0;
+                
+                let btn_x = ox + w - 100.0 - 20.0;
+                let btn_y = oy + h - 40.0;
+                let btn_w = 100.0;
+                let btn_h = 30.0;
+                
+                // If clicking Separate button, don't start drag
+                if x >= btn_x && x <= btn_x + btn_w && y >= btn_y && y <= btn_y + btn_h {
+                    println!("Click on Separate button - not starting drag");
+                    return;
+                }
+            }
+            
             let hit = match orb.kind {
                 OrbKind::Cluster { .. } => {
                      x >= orb.position.0 && x <= orb.position.0 + 300.0 &&
