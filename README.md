@@ -1,220 +1,148 @@
 # Auralis Audio
 
-**The 1-Click Audio Mesh for Linux**
+Visual audio routing for Linux. Drag and drop your audio devices to create synchronized playback across multiple speakers.
 
-A native GTK4 application that makes managing multiple audio devices as simple as drag-and-drop. Auralis brings visual, intuitive audio routing to PipeWire on Fedora and other modern Linux distributions.
+## What is this?
 
----
+Ever wanted to play audio on multiple speakers at once without diving into PipeWire configs or terminal commands? That's what this does.
 
-## ✨ Features
+It's a GTK4 app that lets you visually connect audio devices together. Drag your laptop speakers onto your Bluetooth speaker, and boom—synchronized audio. No `pactl` commands to remember, no config files to edit.
 
-### 🎯 Visual Device Clustering
-Drag and drop audio devices to create synchronized multi-device playback groups. No terminal commands, no complex configurations—just drag, drop, and play.
+## Why?
 
-### 🔊 N-Way Synchronization
-Combine unlimited audio devices into a single logical output. Perfect for:
-- Multi-room audio setups
-- Synchronized speakers across different devices
-- Creating complex audio routing scenarios
+I got tired of manually creating PipeWire combine-sinks every time I wanted to play music on multiple devices. There had to be a better way. So I built this.
 
-### 🎨 Beautiful Native Interface
-Built with GTK4 and Libadwaita for a seamless Fedora desktop experience. Features:
-- Dark mode support
-- Smooth animations
-- Intuitive drag-and-drop interface
-- Real-time device discovery
+The goal is simple: make multi-device audio on Linux as easy as it is on proprietary systems. Drag, drop, done.
 
-### ⚡ PipeWire Native
-Deep integration with PipeWire for:
-- Automatic device detection
-- Hot-plug support
-- Low-latency audio routing
-- Clean, reliable connections
+## Features
 
----
+**Right now:**
+- Visual device discovery (see all your audio devices)
+- Drag-and-drop clustering (combine multiple devices)
+- Real-time PipeWire integration
+- Actually works (no segfaults anymore!)
 
-## 🚀 Getting Started
+**Eventually:**
+- Automatic latency compensation (devices sometimes drift slightly)
+- Physics-based orb animations (they're supposed to float and orbit)
+- WebRTC streaming to phones/tablets
+- Better visual feedback
 
-### Prerequisites
+## Building
 
-- **Operating System:** Fedora Workstation 38+ (or compatible Linux)
-- **Audio System:** PipeWire
-- **Display Server:** Wayland or X11
-- **Rust:** 1.70 or later
-
-### Building from Source
+You need:
+- Fedora (or similar modern Linux with PipeWire)
+- Rust toolchain
+- GTK4 and Libadwaita development files
 
 ```bash
-# Clone the repository
+# Install dependencies on Fedora
+sudo dnf install gtk4-devel libadwaita-devel pipewire-devel
+
+# Clone and build
 git clone https://github.com/Trex099/AURALIS-AUDIO.git
 cd AURALIS-AUDIO
-
-# Build release version
 cargo build --release
 
-# Run the application
+# Run it
 cargo run --release -p auralis-ui
 ```
 
-### Running Tests
+## Using it
+
+1. Start the app
+2. You'll see your audio devices listed on the left
+3. Drag a device into the center clustering zone
+4. Drag another device on top of it
+5. They combine into a cluster—audio now plays through both
+6. Click "Separate" to break them apart
+
+That's it.
+
+## Architecture
+
+It's a Rust workspace with these parts:
+
+- `auralis-core` - PipeWire integration and clustering logic
+- `auralis-ui` - The GTK4 interface you interact with
+- `auralis-net` - Network features (not implemented yet)
+- `auralis-web` - Web client for remote devices (also not done)
+
+The core talks to PipeWire, the UI talks to the core. Standard stuff.
+
+## Known Issues
+
+**It's not perfect:**
+
+- Latency compensation doesn't exist yet, so some devices might be slightly out of sync
+- The physics/animation stuff is mostly stubbed out
+- Currently uses `pactl` commands under the hood (should migrate to native PipeWire API)
+- No packaging yet (you have to build from source)
+
+## Contributing
+
+If you want to help, cool. The codebase is fairly clean now—0 compiler warnings, 15 passing tests. 
+
+Areas that need work:
+- Replacing `pactl` with native PipeWire bindings
+- Actually implementing latency compensation
+- Making the orbs float and animate properly
+- WebRTC streaming support
+
+Standard Rust stuff applies: run `cargo fmt`, make sure tests pass, keep commits focused.
+
+## Technical Details
+
+**Stack:**
+- Language: Rust
+- UI: GTK4 + Libadwaita (native Fedora look)
+- Audio: PipeWire via `pipewire-rs`
+- Threading: Tokio for async, standard threads for PipeWire
+- State: Shared mutexes, message passing between UI and core
+
+**How clustering works:**
+1. User drags device A onto device B
+2. UI sends Connect command to core
+3. Core creates a PipeWire combine-sink with both devices
+4. PipeWire routes audio to the combine-sink
+5. Both devices play the same audio
+
+It's actually pretty straightforward once you understand PipeWire's module system.
+
+## Requirements
+
+**Runtime:**
+- PipeWire (0.3+)
+- GTK4
+- Libadwaita
+- PulseAudio compatibility layer (for `pactl` - temporary)
+
+**Build:**
+- Rust 1.70+
+- pkg-config
+- Development headers for GTK4, Libadwaita, PipeWire
+
+## Testing
 
 ```bash
 cargo test
 ```
 
-All 15 unit tests should pass successfully.
+15 unit tests covering the core data structures. No integration tests yet (PipeWire is hard to mock).
+
+## License
+
+Haven't decided yet. Probably MIT or GPL. Will update when I figure it out.
+
+## Credits
+
+Built with:
+- PipeWire for the audio backend
+- GTK4/Libadwaita for the UI
+- Rust ecosystem for everything else
+
+Thanks to everyone maintaining these projects.
 
 ---
 
-## 🎮 Usage
-
-1. **Launch Auralis**
-   ```bash
-   cargo run --release -p auralis-ui
-   ```
-
-2. **Discover Devices**
-   - Available audio devices appear automatically in the device list
-   - Both physical hardware and application streams are detected
-
-3. **Create a Cluster**
-   - Drag a device icon from the list
-   - Drop it into the clustering zone
-   - Drag additional devices to add them to the cluster
-   - Audio instantly routes to all devices in sync
-
-4. **Separate Devices**
-   - Click the "Separate" button on any cluster
-   - Devices return to individual operation
-
----
-
-## 🏗️ Architecture
-
-Auralis is built as a Rust workspace with clear separation of concerns:
-
-```
-auralis-audio/
-├── auralis-core/      # PipeWire integration & audio logic
-├── auralis-ui/        # GTK4/Libadwaita interface
-├── auralis-net/       # Network features (planned)
-├── auralis-web/       # Web client assets (planned)
-└── auralis-cli/       # Command-line interface (planned)
-```
-
-### Technology Stack
-
-- **Language:** Rust
-- **UI Framework:** GTK4 / Libadwaita
-- **Audio Backend:** PipeWire (`pipewire-rs`)
-- **Async Runtime:** Tokio
-- **State Management:** Thread-safe shared state with Mutex
-
----
-
-## 🛣️ Roadmap
-
-### Current Features (Implemented)
-- ✅ Visual device discovery
-- ✅ Drag-and-drop clustering
-- ✅ Multi-device synchronization
-- ✅ Real-time device hot-plug
-- ✅ Cluster management (create/separate)
-
-### Planned Features
-- 🔄 **Latency Compensation** - Automatic delay adjustment for perfect sync
-- 🔄 **Physics-Based UI** - Floating orbs with orbital animations
-- 🔄 **Beam Mode** - Stream audio to phones/tablets via WebRTC
-- 🔄 **Context-Aware Routing** - Auto-detect calls and route appropriately
-- 🔄 **Advanced Mode** - Direct PipeWire graph visualization
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! This project is in active development.
-
-### Development Setup
-
-```bash
-# Install dependencies (Fedora)
-sudo dnf install gtk4-devel libadwaita-devel pipewire-devel
-
-# Build in debug mode for development
-cargo build
-
-# Run with logging
-RUST_LOG=debug cargo run -p auralis-ui
-```
-
-### Code Style
-
-- Follow standard Rust conventions
-- Run `cargo fmt` before committing
-- Ensure all tests pass with `cargo test`
-- Keep commits atomic and well-described
-
----
-
-## 📋 Requirements
-
-### Runtime Dependencies
-- PipeWire (audio server)
-- GTK4 (>= 4.0)
-- Libadwaita (>= 1.0)
-- PulseAudio compatibility layer (for `pactl`)
-
-### Build Dependencies
-- Rust toolchain (>= 1.70)
-- `pkg-config`
-- GTK4 development files
-- Libadwaita development files
-- PipeWire development files
-
-### Installation (Fedora)
-```bash
-sudo dnf install gtk4-devel libadwaita-devel pipewire-devel pkg-config
-```
-
----
-
-## 🐛 Known Issues
-
-- Latency compensation is not yet implemented (devices may have slight sync delays)
-- Physics simulation is partially implemented (orbs don't float yet)
-- Beam mode (WebRTC streaming) is planned but not started
-
-See [Issues](https://github.com/Trex099/AURALIS-AUDIO/issues) for current bugs and feature requests.
-
----
-
-## 📜 License
-
-Copyright © 2025 Auralis Audio Contributors
-
-[Add your preferred license here - MIT, GPL, Apache 2.0, etc.]
-
----
-
-## 🙏 Acknowledgments
-
-- **PipeWire** - For the excellent modern Linux audio architecture
-- **GTK/GNOME** - For the amazing UI toolkit
-- **The Rust Community** - For the incredible ecosystem
-
----
-
-## 📞 Contact & Support
-
-- **Issues:** [GitHub Issues](https://github.com/Trex099/AURALIS-AUDIO/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/Trex099/AURALIS-AUDIO/discussions)
-
----
-
-<div align="center">
-
-**Made with ❤️ for Linux audio enthusiasts**
-
-[Report Bug](https://github.com/Trex099/AURALIS-AUDIO/issues) · [Request Feature](https://github.com/Trex099/AURALIS-AUDIO/issues) · [Documentation](https://github.com/Trex099/AURALIS-AUDIO/wiki)
-
-</div>
+Questions? Open an issue. Pull requests welcome.
