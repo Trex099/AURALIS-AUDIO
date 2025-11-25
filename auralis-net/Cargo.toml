@@ -1,0 +1,16 @@
+[package]
+name = "auralis-net"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gstreamer = { workspace = true }
+gstreamer-webrtc = { workspace = true }
+gstreamer-sdp = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+futures = { workspace = true }

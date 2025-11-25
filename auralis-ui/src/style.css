@@ -1,0 +1,224 @@
+/* Global Variables matching code.html */
+@define-color primary_blue #2b6cee;
+@define-color bg_dark #101622;
+@define-color sidebar_bg #141927;
+@define-color card_bg #1e293b;
+/* slate-800 */
+@define-color text_white #ffffff;
+@define-color text_slate_300 #cbd5e1;
+@define-color text_slate_400 #94a3b8;
+@define-color text_slate_500 #64748b;
+
+/* Reset/Base */
+window,
+box,
+grid,
+flowbox {
+    font-family: "Space Grotesk", sans-serif;
+    color: @text_white;
+}
+
+.main-window {
+    background-color: @bg_dark;
+}
+
+/* Sidebar */
+.sidebar {
+    background-color: @sidebar_bg;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar list {
+    background-color: transparent;
+}
+
+.sidebar row {
+    background-color: transparent;
+    color: @text_slate_400;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin: 4px 12px;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.sidebar row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: @text_white;
+}
+
+.sidebar row:selected {
+    background-color: rgba(43, 108, 238, 0.15);
+    /* primary/15 */
+    color: @primary_blue;
+}
+
+.sidebar row:selected label {
+    color: @primary_blue;
+    font-weight: 600;
+}
+
+/* Sidebar Logo */
+.logo-text {
+    font-weight: 700;
+    font-size: 16px;
+    color: @text_white;
+}
+
+.logo-subtext {
+    font-size: 12px;
+    color: @text_slate_500;
+}
+
+/* Main Content */
+.main-content {
+    background-color: @bg_dark;
+}
+
+/* Header */
+.header-button {
+    background-color: transparent;
+    color: @text_slate_400;
+    border: none;
+    box-shadow: none;
+    padding: 8px;
+    border-radius: 50%;
+}
+
+.header-button:hover {
+    color: @text_white;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.btn-primary {
+    background-color: @primary_blue;
+    color: @text_white;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 8px 16px;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(43, 108, 238, 0.3);
+}
+
+.btn-primary:hover {
+    background-color: shade(@primary_blue, 1.1);
+}
+
+/* Clustering Zone */
+.clustering-zone {
+    background-color: rgba(20, 25, 39, 0.5);
+    border: 2px dashed #334155;
+    border-radius: 16px;
+    margin: 24px;
+}
+
+/* Available Devices Section */
+.section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: @text_white;
+    margin-bottom: 16px;
+    margin-left: 24px;
+}
+
+/* Device Cards */
+.device-card {
+    background-color: @sidebar_bg;
+    border-radius: 16px;
+    padding: 16px;
+    background-color: #1e293b;
+    /* slate-800 */
+    border-radius: 12px;
+    padding: 12px;
+    margin: 4px;
+    color: white;
+    /* FlowBox handles spacing */
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.device-card:selected {
+    background-color: #2b6cee;
+    /* primary blue */
+    color: white;
+}
+
+.device-list {
+    background-color: transparent;
+}
+
+.device-row {
+    background-color: #1e293b;
+    /* slate-800 */
+    border-radius: 8px;
+    margin-bottom: 4px;
+    transition: background-color 0.2s;
+    color: white;
+}
+
+.device-row:hover {
+    background-color: #334155;
+    /* slate-700 */
+}
+
+.device-row:selected {
+    background-color: #2b6cee;
+    /* primary blue */
+    color: white;
+}
+
+.device-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    background-color: #1a202e;
+}
+
+.device-icon-container {
+    background-color: #0f172a;
+    /* slate-900 (darker for contrast) */
+    border-radius: 8px;
+    min-width: 48px;
+    min-height: 48px;
+    margin-bottom: 8px;
+    color: @text_slate_300;
+}
+
+.device-name {
+    color: @text_white;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.status-active {
+    color: #4ade80;
+    /* green-400 */
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.status-inactive {
+    color: @text_slate_500;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.status-muted {
+    color: #f87171;
+    /* red-400 */
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Properties Panel */
+.properties-panel {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 24px;
+}
+
+.properties-card {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px;
+}

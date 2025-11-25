@@ -1,0 +1,19 @@
+[package]
+name = "auralis-ui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+auralis-core = { path = "../auralis-core" }
+gtk4 = { workspace = true }
+libadwaita = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+ctrlc = "3.4"
+tracing-subscriber = { workspace = true }
+rand = "0.8"
+uuid = { workspace = true }
+cairo-rs = "0.20"
+glib = "0.20"
+async-channel = "2.1"
