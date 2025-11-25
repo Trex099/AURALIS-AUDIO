@@ -87,6 +87,7 @@ impl SharedState {
 pub struct PipeWireClient {
     _thread: thread::JoinHandle<()>,
     _cmd_thread: thread::JoinHandle<()>,
+    _command_pool: threadpool::ThreadPool,
 }
 
 
@@ -438,6 +439,10 @@ impl PipeWireClient {
             mainloop.run();
         });
         
+        // Create thread pool for command handlers (max 10 concurrent)
+        let pool = threadpool::ThreadPool::new(10);
+        let pool_for_thread = pool.clone();
+        
         // Command handling thread
         let state_for_thread = state_commands.clone();
         let cmd_thread = thread::spawn(move || {
@@ -456,11 +461,11 @@ impl PipeWireClient {
                         cmd_count += 1;
                         info!("📨 [CORE-RECV] Command #{} received: {:?}", cmd_count, cmd);
                         
-                        // Spawn handler in separate thread to avoid blocking the receiver
+                        // Execute handler in thread pool (bounded to 10 workers)
                         let state_clone = state_for_thread.clone();
                         let sender_clone = sender_commands.clone();
                         
-                        thread::spawn(move || {
+                        pool_for_thread.execute(move || {
                             match cmd {
                                 UiCommand::Connect { source, target } => {
                                     info!("🔗 [CORE-EXEC] Executing Connect: {} -> {}", source, target);
@@ -477,8 +482,6 @@ impl PipeWireClient {
                                     info!("🛑 [CORE-RECV] Shutdown command received");
                                     state_clone.cleanup_combine_sinks();
                                     info!("✓ [CORE-DONE] Cleanup complete, exiting thread");
-                                    // DON'T call process::exit! Just return and let thread finish
-                                    return;
                                 }
                             }
                         });
@@ -495,6 +498,7 @@ impl PipeWireClient {
         Ok(Self {
             _thread: thread,
             _cmd_thread: cmd_thread,
+            _command_pool: pool,
         })
     }
 
@@ -826,6 +830,9 @@ impl PipeWireClient {
                 "module-combine-sink",
                 &format!("sink_name={}", combine_name),
                 &format!("slaves={}", slaves),
+                "latency_compensate=yes",  // Enable automatic latency compensation
+                "rate=48000",               // Standard sample rate
+                "channels=2",               // Stereo
             ])
             .output();
 

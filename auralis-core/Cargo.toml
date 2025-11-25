@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-pipewire = { workspace = true }
-anyhow = { workspace = true }
-thiserror = { workspace = true }
-uuid = { workspace = true }
-tracing = { workspace = true }
-tokio = { workspace = true }
+pipewire = "0.8"
+anyhow = "1.0"
+thiserror = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+uuid = { version = "1.0", features = ["v4"] }
+tracing = "0.1"
+threadpool = "1.8"
