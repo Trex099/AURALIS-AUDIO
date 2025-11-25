@@ -1,10 +1,33 @@
 use gtk4::prelude::*;
 use gtk4::{DrawingArea, DropTarget, GestureClick};
 use std::sync::mpsc::Sender;
+use std::collections::HashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
 use auralis_core::{Orb, OrbKind, UiCommand};
 use crate::state::SharedState;
 use uuid::Uuid;
 use cairo;
+
+// Animation state for orbital movement
+#[derive(Debug, Clone)]
+struct AnimationState {
+    angle: f64,              // Current angle in radians
+    angular_velocity: f64,   // Rotation speed
+    orbit_radius: f64,       // Distance from center
+}
+
+impl Default for AnimationState {
+    fn default() -> Self {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        Self {
+            angle: rng.gen::<f64>() * 2.0 * std::f64::consts::PI,
+            angular_velocity: 0.01 + rng.gen::<f64>() * 0.02,
+            orbit_radius: 60.0 + rng.gen::<f64>() * 80.0,
+        }
+    }
+}
 
 pub fn build(state: SharedState, cmd_tx: Sender<UiCommand>, on_drop: impl Fn() + 'static) -> DrawingArea {
     let drawing_area = DrawingArea::builder()
@@ -12,15 +35,45 @@ pub fn build(state: SharedState, cmd_tx: Sender<UiCommand>, on_drop: impl Fn() +
         .vexpand(true)
         .build();
 
-    // Animation Loop
-    drawing_area.add_tick_callback(|da, _clock| {
+    // Animation state storage
+    let animations = Rc::new(RefCell::new(HashMap::<Uuid, AnimationState>::new()));
+    
+    // Animation Loop - runs at ~60fps
+    let state_tick = state.clone();
+    let anims_tick = animations.clone();
+    drawing_area.add_tick_callback(move |da, _clock| {
+        // Update all animation angles
+        let mut anims = anims_tick.borrow_mut();
+        let state_borrow = state_tick.borrow();
+        
+        // Add animations for new orbs, remove for deleted ones
+        for (id, orb) in &state_borrow.orbs {
+            if !anims.contains_key(id) && matches!(orb.kind, OrbKind::PhysicalSink { .. } | OrbKind::ApplicationSource { .. }) {
+                anims.insert(*id, AnimationState::default());
+            }
+        }
+        
+        // Remove animation states for orbs that no longer exist
+        anims.retain(|id, _| state_borrow.orbs.contains_key(id));
+        
+        // Update angles
+        for anim in anims.values_mut() {
+            anim.angle += anim.angular_velocity;
+            // Wrap angle to prevent overflow
+            if anim.angle > 2.0 * std::f64::consts::PI {
+                anim.angle -= 2.0 * std::f64::consts::PI;
+            }
+        }
+        
         da.queue_draw();
         gtk4::glib::ControlFlow::Continue
     });
 
     let state_draw = state.clone();
+    let anims_draw = animations.clone();
     drawing_area.set_draw_func(move |_, cr, w, h| {
         let state = state_draw.borrow();
+        let anims = anims_draw.borrow();
         
         // Background is handled by CSS (dashed border)
         // We just draw the clusters here
@@ -34,10 +87,10 @@ pub fn build(state: SharedState, cmd_tx: Sender<UiCommand>, on_drop: impl Fn() +
                     draw_cluster(cr, orb, devices);
                 },
                 _ => {
-                    // Draw floating orbs if they are in the zone
-                    if orb.position != (0.0, 0.0) {
-                        has_clusters = true; // Treat as content so we don't show "empty" text
-                        draw_floating_orb(cr, orb);
+                    // Draw floating orbs with animation
+                    if let Some(anim) = anims.get(&orb.id) {
+                        has_clusters = true;
+                        draw_floating_orb(cr, orb, anim, w as f64, h as f64);
                     }
                 }
             }
@@ -365,43 +418,50 @@ fn draw_cluster(cr: &cairo::Context, orb: &Orb, _devices: &Vec<String>) {
     cr.show_text("Separate").unwrap();
 }
 
-fn draw_floating_orb(cr: &cairo::Context, orb: &Orb) {
-    let x = orb.position.0;
-    let y = orb.position.1;
+fn draw_floating_orb(cr: &cairo::Context, orb: &Orb, anim: &AnimationState, canvas_width: f64, canvas_height: f64) {
+    // Calculate orbital position
+    let center_x = canvas_width / 2.0;
+    let center_y = canvas_height / 2.0;
     
-    // Pulse Animation
-    // We don't have easy access to frame time here without passing it down, 
-    // but we can use system time or just a static pulse for now if we want simple.
-    // Actually, since we are redrawing every frame, let's use a static time-based pulse.
-    let time = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as f64;
+    let x = center_x + anim.orbit_radius * anim.angle.cos() - 32.0; // Offset for orb size
+    let y = center_y + anim.orbit_radius * anim.angle.sin() - 32.0;
     
-    let pulse = (time / 500.0).sin() * 2.0; // +/- 2px pulse
-    let size = 64.0 + pulse; 
+    let size = 64.0;
     
     // Radial Gradient Background
     let pattern = cairo::RadialGradient::new(x + size/2.0, y + size/2.0, 0.0, x + size/2.0, y + size/2.0, size/2.0);
-    pattern.add_color_stop_rgba(0.0, 0.17, 0.42, 0.93, 0.8); // Center (Primary)
-    pattern.add_color_stop_rgba(1.0, 0.12, 0.16, 0.23, 0.9); // Edge (Dark)
+    
+    // Color based on type
+    match &orb.kind {
+        OrbKind::PhysicalSink { .. } => {
+            pattern.add_color_stop_rgba(0.0, 0.17, 0.42, 0.93, 0.8); // Blue center
+            pattern.add_color_stop_rgba(1.0, 0.12, 0.16, 0.23, 0.9); // Dark edge
+        }
+        OrbKind::ApplicationSource { .. } => {
+            pattern.add_color_stop_rgba(0.0, 0.93, 0.42, 0.17, 0.8); // Orange center
+            pattern.add_color_stop_rgba(1.0, 0.23, 0.12, 0.12, 0.9); // Dark edge
+        }
+        _ => {
+            pattern.add_color_stop_rgba(0.0, 0.5, 0.5, 0.5, 0.8);
+            pattern.add_color_stop_rgba(1.0, 0.2, 0.2, 0.2, 0.9);
+        }
+    }
     
     cr.set_source(&pattern).unwrap();
     cr.arc(x + size/2.0, y + size/2.0, size/2.0, 0.0, 2.0 * std::f64::consts::PI);
     cr.fill().unwrap();
     
     // Glow / Border
-    cr.set_source_rgba(0.4, 0.6, 1.0, 0.6); // Lighter Blue Glow
+    cr.set_source_rgba(0.4, 0.6, 1.0, 0.6);
     cr.set_line_width(3.0);
     cr.arc(x + size/2.0, y + size/2.0, size/2.0, 0.0, 2.0 * std::f64::consts::PI);
     cr.stroke().unwrap();
     
-    // Inner Icon / Symbol (Simple Speaker shape for now)
+    // Inner Icon / Symbol
     cr.set_source_rgba(1.0, 1.0, 1.0, 0.9);
     let cx = x + size/2.0;
     let cy = y + size/2.0;
     
-    // Draw a simple speaker icon manually
     cr.set_line_width(2.0);
     cr.move_to(cx - 8.0, cy - 8.0);
     cr.line_to(cx - 8.0, cy + 8.0);
@@ -418,7 +478,7 @@ fn draw_floating_orb(cr: &cairo::Context, orb: &Orb) {
     cr.arc(cx + 4.0, cy, 10.0, -0.6, 0.6);
     cr.stroke().unwrap();
 
-    // Label (Name) below with shadow
+    // Label below with shadow
     cr.select_font_face("Space Grotesk", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
     cr.set_font_size(12.0);
     let text = &orb.name;
