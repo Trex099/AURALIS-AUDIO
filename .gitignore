@@ -20,3 +20,14 @@ Thumbs.db
 
 # Test artifacts
 /auralis-core/tests/*.log
+
+# Phase tracking (internal development files)
+PHASE_*.md
+*_RESEARCH.md
+*_PLAN.md
+*_COMPLETE.md
+*_SUMMARY.md
+PROGRESS_*.md
+SESSION_*.md
+test_*.sh
+*.patch
